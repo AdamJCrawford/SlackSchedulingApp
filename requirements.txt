@@ -1,0 +1,6 @@
+slack-sdk
+slack_bolt
+slackeventsapi
+python-dotenv
+flask
+python-dotenv
