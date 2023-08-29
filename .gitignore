@@ -1,5 +1,5 @@
-idea
+.idea
 names.txt
 shifts.csv
 .env
-__pychache__
+__pycache__/

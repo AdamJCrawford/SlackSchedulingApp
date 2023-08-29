@@ -1,4 +1,5 @@
 import csv
+import os
 
 from datetime import datetime
 
@@ -6,14 +7,18 @@ DATE = datetime.today().strftime("%Y-%m-%d")
 
 PEOPLE = []
 
-with open("names.txt", 'r') as names:
+dirname = os.path.dirname(__file__)
+names_txt_file = os.path.join(dirname, 'names.txt')
+shifts_csv_file = os.path.join(dirname, 'shifts.csv')
+
+with open(names_txt_file, 'r') as names:
     for name in names:
         PEOPLE.append(name.strip())
 
 NUM_PEOPLE = len(PEOPLE)
 
 current_row = [None] * (1 + 4 * NUM_PEOPLE)
-with open("shifts.csv") as csv_file:
+with open(shifts_csv_file) as csv_file:
     csv_reader = csv.reader(csv_file)
     for row in csv_reader:
         if row and row[0] == DATE:

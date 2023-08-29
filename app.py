@@ -5,6 +5,7 @@ import blocks
 import csv
 import os
 
+
 # Use the package we installed
 from slack_bolt import App
 from slack_bolt.adapter.flask import SlackRequestHandler
@@ -25,21 +26,26 @@ app = App(
 flask_app = Flask(__name__)
 handler = SlackRequestHandler(app)
 
+dirname = os.path.dirname(__file__)
+shifts_csv_file = os.path.join(dirname, 'shifts.csv')
 
-def update_values(body, row):
+def update_values(row):
     values = blocks.VIEW["blocks"]
     counter = 0
     for value in values:
         if value["type"] == "actions" and value["elements"][0]["type"] == "datepicker":
             value["elements"][0]["initial_date"] = row[counter] if row[counter] else blocks.DATE
+
         elif value["type"] == "input" and value["element"]["type"] == "timepicker":
             value["element"]["initial_time"] = row[counter] if row[counter] else "00:00"
+
         elif value["type"] == "input" and value["element"]["type"] == "plain_text_input":
             value["element"]["initial_value"] = row[counter] if row[counter] else ""
+
         else:
             continue
         counter += 1
-        if counter == 1 or counter == 5 or counter == 9:
+        if (counter - 1) % 4 == 0:
             counter += 1
 
     CLIENT.views_update(view=blocks.VIEW, external_id="home")
@@ -56,12 +62,12 @@ def handle_date(ack, body, logger):
                 blocks.DATE = value["selected_date"]
 
     current_row = [None] * (1 + 4 * blocks.NUM_PEOPLE)
-    with open("shifts.csv") as csv_file:
+    with open(shifts_csv_file) as csv_file:
         csv_reader = csv.reader(csv_file)
         for row in csv_reader:
             if row and row[0] == blocks.DATE:
                 current_row = row
-    update_values(body, current_row)
+    update_values(current_row)
 
 
 @app.action("save_button")
@@ -86,7 +92,7 @@ def handle_save_button(ack, body, logger):
             elif value["type"] == "plain_text_input":
                 data[key] = value["value"]
     rows = []
-    with open("shifts.csv", "r") as csv_file:
+    with open(shifts_csv_file, "r") as csv_file:
         for row in csv.reader(csv_file):
             if row and row[0] != blocks.DATE:
                 rows.append(row)
@@ -103,7 +109,7 @@ def handle_save_button(ack, body, logger):
             ]
         )
 
-    with open("shifts.csv", "w") as csv_file:
+    with open(shifts_csv_file, "w") as csv_file:
         writer = csv.writer(csv_file)
         for row in rows:
             writer.writerow(row)
@@ -129,9 +135,3 @@ def update_home_tab(client, event, logger):
 @flask_app.route("/slack/events", methods=["POST"])
 def slack_events():
     return handler.handle(request)
-
-
-# Start your app and listen for events
-if __name__ == "__main__":
-    flask_app.run(debug=True, port=3000)
-#     app.start(port=int(os.environ.get("PORT", 3000)))
